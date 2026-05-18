@@ -1,11 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TodoInput } from "./TodoInput";
 import { TodoList } from "./TodoList";
 
 export const Todo = () => {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(() => {
+    const saved = localStorage.getItem("todos");
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const [inputValue, setInputValue] = useState("");
+  const [filter, setFilter] = useState("all");
+  const filters = ["all", "active", "completed"];
+
+  const handleFiltering = () => {
+    if (filter === "active") {
+      return items.filter((item) => !item.status);
+    }
+    if (filter === "completed") {
+      return items.filter((item) => item.status);
+    } else {
+      return items;
+    }
+  };
+
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(items));
+  }, [items]);
 
   const addItem = () => {
     if (inputValue.trim() === "") return;
@@ -36,6 +56,10 @@ export const Todo = () => {
     setInputValue(e.target.value);
   };
 
+  const clearCompleted = () => {
+    setItems(items.filter((item) => !item.status));
+  };
+
   return (
     <div
       className="min-h-screen flex items-center justify-center"
@@ -53,16 +77,37 @@ export const Todo = () => {
         }}
       >
         <h2 className="text-2xl font-bold text-white mb-6">Todo App</h2>
+        <div className="flex gap-2 mb-4">
+          {filters.map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`text-xs px-3 py-1 rounded-full font-medium capitalize transition-all duration-200 ${filter === f ? "bg-white text-purple-600" : "text-white/70 hover:text-white"}`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
         <TodoInput
           inputValue={inputValue}
           handleInput={handleInput}
           addItem={addItem}
         />
         <TodoList
-          items={items}
+          items={handleFiltering()}
           deleteItem={deleteItem}
           toggleComplete={toggleComplete}
         />
+        <button
+          onClick={clearCompleted}
+          className="text-xs text-white/60 hover:text-white underline transition-all duration-200"
+        >
+          Clear Completed
+        </button>
+        <p className="text-right text-white/70 text-sm mt-4">
+          {items.filter((item) => item.status === true).length} of{" "}
+          {items.length} completed
+        </p>
       </div>
     </div>
   );
